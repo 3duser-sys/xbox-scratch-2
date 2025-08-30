@@ -2,99 +2,95 @@ const BlockType = require('../../extension-support/block-type');
 const ArgumentType = require('../../extension-support/argument-type');
 const TargetType = require('../../extension-support/target-type');
 
-class Scratch3YourExtension {
+class Scratch3XboxController {
+    constructor(runtime) {
+        this.runtime = runtime;
 
-    constructor (runtime) {
-        // put any setup for your extension here
+        // initial states
+        this.buttonStates = {
+            A: false,
+            B: false,
+            X: false,
+            Y: false,
+            Up: false,
+            Down: false,
+            Left: false,
+            Right: false
+        };
+
+        this.axisStates = {
+            LX: 0, // left stick X
+            LY: 0, // left stick Y
+            RX: 0, // right stick X
+            RY: 0  // right stick Y
+        };
+
+        // If you use TurboWarp, you could poll navigator.getGamepads() here
+        // Example:
+        // setInterval(() => this.updateGamepad(), 50);
     }
 
-    /**
-     * Returns the metadata about your extension.
-     */
-    getInfo () {
+    getInfo() {
         return {
-            // unique ID for your extension
-            id: 'yourScratchExtension',
-
-            // name that will be displayed in the Scratch UI
-            name: 'Demo',
-
-            // colours to use for your extension blocks
-            color1: '#000099',
-            color2: '#660066',
-
-            // icons to display
-            blockIconURI: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAFCAAAAACyOJm3AAAAFklEQVQYV2P4DwMMEMgAI/+DEUIMBgAEWB7i7uidhAAAAABJRU5ErkJggg==',
-            menuIconURI: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAFCAAAAACyOJm3AAAAFklEQVQYV2P4DwMMEMgAI/+DEUIMBgAEWB7i7uidhAAAAABJRU5ErkJggg==',
-
-            // your Scratch blocks
+            id: 'xboxController',
+            name: 'Xbox Controller',
+            color1: '#00aaff',
+            color2: '#005577',
+            blockIconURI: '',
+            menuIconURI: '',
             blocks: [
                 {
-                    // name of the function where your block code lives
-                    opcode: 'myFirstBlock',
-
-                    // type of block - choose from:
-                    //   BlockType.REPORTER - returns a value, like "direction"
-                    //   BlockType.BOOLEAN - same as REPORTER but returns a true/false value
-                    //   BlockType.COMMAND - a normal command block, like "move {} steps"
-                    //   BlockType.HAT - starts a stack if its value changes from false to true ("edge triggered")
+                    opcode: 'isButtonPressed',
+                    blockType: BlockType.BOOLEAN,
+                    text: 'button [BUTTON] pressed?',
+                    arguments: { BUTTON: { type: ArgumentType.STRING, defaultValue: 'A', menu: 'buttons' } },
+                    filter: [TargetType.SPRITE, TargetType.STAGE]
+                },
+                {
+                    opcode: 'axisValue',
                     blockType: BlockType.REPORTER,
-
-                    // label to display on the block
-                    text: 'My first block [MY_NUMBER] and [MY_STRING]',
-
-                    // true if this block should end a stack
-                    terminal: false,
-
-                    // where this block should be available for code - choose from:
-                    //   TargetType.SPRITE - for code in sprites
-                    //   TargetType.STAGE  - for code on the stage / backdrop
-                    // remove one of these if this block doesn't apply to both
-                    filter: [ TargetType.SPRITE, TargetType.STAGE ],
-
-                    // arguments used in the block
-                    arguments: {
-                        MY_NUMBER: {
-                            // default value before the user sets something
-                            defaultValue: 123,
-
-                            // type/shape of the parameter - choose from:
-                            //     ArgumentType.ANGLE - numeric value with an angle picker
-                            //     ArgumentType.BOOLEAN - true/false value
-                            //     ArgumentType.COLOR - numeric value with a colour picker
-                            //     ArgumentType.NUMBER - numeric value
-                            //     ArgumentType.STRING - text value
-                            //     ArgumentType.NOTE - midi music value with a piano picker
-                            type: ArgumentType.NUMBER
-                        },
-                        MY_STRING: {
-                            // default value before the user sets something
-                            defaultValue: 'hello',
-
-                            // type/shape of the parameter - choose from:
-                            //     ArgumentType.ANGLE - numeric value with an angle picker
-                            //     ArgumentType.BOOLEAN - true/false value
-                            //     ArgumentType.COLOR - numeric value with a colour picker
-                            //     ArgumentType.NUMBER - numeric value
-                            //     ArgumentType.STRING - text value
-                            //     ArgumentType.NOTE - midi music value with a piano picker
-                            type: ArgumentType.STRING
-                        }
-                    }
+                    text: '[AXIS] axis value',
+                    arguments: { AXIS: { type: ArgumentType.STRING, defaultValue: 'LX', menu: 'axes' } },
+                    filter: [TargetType.SPRITE, TargetType.STAGE]
                 }
-            ]
+            ],
+            menus: {
+                buttons: ['A', 'B', 'X', 'Y', 'Up', 'Down', 'Left', 'Right'],
+                axes: ['LX', 'LY', 'RX', 'RY']
+            }
         };
     }
 
+    isButtonPressed({ BUTTON }) {
+        return this.buttonStates[BUTTON] || false;
+    }
 
-    /**
-     * implementation of the block with the opcode that matches this name
-     *  this will be called when the block is used
-     */
-    myFirstBlock ({ MY_NUMBER, MY_STRING }) {
-        // example implementation to return a string
-        return MY_STRING + ' : doubled would be ' + (MY_NUMBER * 2);
+    axisValue({ AXIS }) {
+        return this.axisStates[AXIS] || 0;
+    }
+
+    // Only works in TurboWarp / unsandboxed
+    updateGamepad() {
+        const gamepads = navigator.getGamepads();
+        if (!gamepads[0]) return;
+        const gp = gamepads[0];
+
+        // Buttons
+        this.buttonStates.A = gp.buttons[0].pressed;
+        this.buttonStates.B = gp.buttons[1].pressed;
+        this.buttonStates.X = gp.buttons[2].pressed;
+        this.buttonStates.Y = gp.buttons[3].pressed;
+        this.buttonStates.Up = gp.buttons[12].pressed;
+        this.buttonStates.Down = gp.buttons[13].pressed;
+        this.buttonStates.Left = gp.buttons[14].pressed;
+        this.buttonStates.Right = gp.buttons[15].pressed;
+
+        // Axes
+        this.axisStates.LX = gp.axes[0];
+        this.axisStates.LY = gp.axes[1];
+        this.axisStates.RX = gp.axes[2];
+        this.axisStates.RY = gp.axes[3];
     }
 }
 
-module.exports = Scratch3YourExtension;
+module.exports = Scratch3XboxController;
